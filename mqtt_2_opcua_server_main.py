@@ -1,4 +1,4 @@
-# 接收 新 JSON
+# 接收 新 JSON 版本
 # LINUX
 # mosquitto_pub -h 192.168.1.84 -t test/topic -m '{"name":"MyVariable8","tag":"ns=2;s=MyVariable8","value":88,"quality":"Good","timestamp":"2024-10-02 23:38:02.425118"}'
 # windows 
