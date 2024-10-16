@@ -2,6 +2,17 @@ import paho.mqtt.client as mqtt
 from datetime import datetime
 import json,time,psutil,threading,os, random
 from concurrent.futures import ThreadPoolExecutor,as_completed
+import pandas as pd
+
+csv_file_path = r"D:\project\IED\mqtt2opcua_part2\iec2opcua_mapping.csv"
+
+def get_iec_paths(csv_file_path):
+    # 讀取 CSV 檔案
+    df = pd.read_csv(csv_file_path)
+    # 取得 IECPath 欄位的所有內容
+    iec_paths = df['IECPath'].tolist()
+    return iec_paths
+
 
 # 創建兩個 MQTT 客戶端，分別連接到不同的 broker
 def setup_mqtt_clients_multi():
@@ -52,7 +63,7 @@ def publish_message(i,client):
     "Subscriber": "Topic/DI/P31025",
     "Content":
         {
-        "IECPath":"P31025$P31025Relay$Obj1CSWI1$Pos$stVal",
+        "IECPath":f"{i}", #"P31025$P31025Relay$Obj1CSWI1$Pos$stVal",
         "Type": "DP",
         "Value":f"{sec}",
         "Quality": "FFFF",
@@ -78,8 +89,10 @@ def publish_message_count_per_second (client):
     with ThreadPoolExecutor(max_workers=4) as executor:
         # 隨機產生 1000筆1~10000之間
         # futures = [executor.submit(publish_message, random.randint(1, 10000)) for _ in range(1000)]
-        # testing 前n筆
-        futures = [executor.submit(publish_message, i, client) for i in range(2000)]
+        # testing 前2000筆
+        # futures = [executor.submit(publish_message, i, client) for i in range(2000)]
+        # publish csv IECPath
+        futures = [executor.submit(publish_message, i, client) for i in get_iec_paths(csv_file_path)]
         for future in as_completed(futures):
             try:
                 result = future.result()

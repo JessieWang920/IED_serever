@@ -37,8 +37,9 @@ log_file_path = os.path.join(path, LOG_FILE_NAME)
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler(log_file_path, mode='a'), logging.StreamHandler()])
 logger = logging.getLogger("opcua_server")
+logger.error("==================================================================")
 
-# Initialize global variables
+# Initialize global variables   
 message_queue = queue.Queue()
 iec_to_opcua_mapping = {}
 data_buffer = []
@@ -75,7 +76,7 @@ def load_iec_to_opcua_mapping():
             for row in reader:
                 iec_to_opcua_mapping[row['IECPath']] = row['OpcuaNode']
     except Exception as e:
-        print(f"Error loading CSV file: {e}")
+        logger.error(f"Error loading CSV file: {e}")
 
 # Send data to OPC UA server
 async def send_to_opcua(server, data):
@@ -167,9 +168,9 @@ async def process_messages(server):
                     try:
                         await send_to_opcua(server, msg)
                     except json.JSONDecodeError as e:
-                        print(f"Error decoding JSON: {e}")
+                        logger.error(f"Error decoding JSON: {e}")
                     except Exception as e:
-                        print(f"Error sending to OPC UA: {e}")
+                        logger.error(f"Error sending to OPC UA: {e}")
     except Exception as e:
         logger.error(f"Error processing messages: {e}")
 
