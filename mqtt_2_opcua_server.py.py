@@ -141,7 +141,7 @@ async def create_node(objects, i):
     try:
         node = await objects.add_variable(f"ns=2;s=var{i}", f"var{i}", i)
         await node.set_writable()
-        status_code_value = ua.DataValue(ua.Variant(ua.StatusCodes.Good))
+        status_code_value = ua.DataValue(ua.StatusCodes.Good)
         await node.write_value(status_code_value)
         # return node
     except Exception as e:
