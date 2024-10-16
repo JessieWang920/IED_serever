@@ -66,7 +66,7 @@ def publish_message(i,client):
         "IECPath":f"{i}", #"P31025$P31025Relay$Obj1CSWI1$Pos$stVal",
         "Type": "DP",
         "Value":f"{sec}",
-        "Quality": "FFFF",
+        "Quality": "0000",
         "SourceTime":"2024-09-28 17:24:18.258"#f"{datetime.now()}"
         }
     }    
@@ -84,7 +84,7 @@ def publish_message(i,client):
     #     except Exception as e:
     #         print(f"發布消息時發生錯誤 (客戶端 {client._client_id.decode()}): {e}")
 
-
+IECpath_list = get_iec_paths(csv_file_path)
 def publish_message_count_per_second (client):  
     with ThreadPoolExecutor(max_workers=4) as executor:
         # 隨機產生 1000筆1~10000之間
@@ -92,7 +92,7 @@ def publish_message_count_per_second (client):
         # testing 前2000筆
         # futures = [executor.submit(publish_message, i, client) for i in range(2000)]
         # publish csv IECPath
-        futures = [executor.submit(publish_message, i, client) for i in get_iec_paths(csv_file_path)]
+        futures = [executor.submit(publish_message, i, client) for i in IECpath_list]
         for future in as_completed(futures):
             try:
                 result = future.result()

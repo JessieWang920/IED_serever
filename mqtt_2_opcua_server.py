@@ -1,8 +1,10 @@
-# 接收 新 JSON 版本 
+# 3000 個資料每秒更新，publish 到 opcua client + publish mqtt 約延遲4秒
+
 # LINUX
 # mosquitto_pub -h 192.168.1.84 -t test/topic -m '{"name":"MyVariable8","tag":"ns=2;s=MyVariable8","value":88,"quality":"Good","timestamp":"2024-10-02 23:38:02.425118"}'
 # windows 
-# mosquitto_pub -h 192.168.1.84 -t test/topic -m "{\"name\":\"MyVariable8\",\"tag\":\"ns=2;s=MyVariable8\",\"value\":88,\"quality\":\"Good\",\"timestamp\":\"2024-10-02 23:38:02.425118\"}"
+# mosquitto_pub -h 127.0.0.1 -t Topic/DI/P31025 -f "D:\project\IED\mqtt2opcua_part2\mqtt_pub_test.json"
+
 
 import paho.mqtt.client as mqtt
 from datetime import datetime,timezone, timedelta
@@ -44,12 +46,16 @@ message_queue = queue.Queue()
 iec_to_opcua_mapping = {}
 data_buffer = []
 
-
-# MQTT callbacks
 def on_message(client, userdata, message):
     try:
-        msg = json.loads(message.payload)["Content"]
-        message_queue.put(msg)  # Put the message into the queue
+        msg = json.loads(message.payload)        
+        if "Publisher" in msg:
+            sub_topic = "test/publisher"
+            client.publish(sub_topic, json.dumps(msg))
+            logger.info(f"Republished message to topic: {sub_topic}")
+        else:
+            message_queue.put(msg["Content"])  # Put the message into the queue
+    
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode message: {e}")
     except Exception as e:
@@ -90,8 +96,8 @@ async def send_to_opcua(server, data):
             logger.warning(f"Failed to get node: {e}")
             return
         
-        local_timezone = timezone(timedelta(hours=8))  # 设定时区为 UTC+8
-        # server_timestamp = datetime.now(local_timezone)  # 当前时间为 UTC+8
+        local_timezone = timezone(timedelta(hours=8))  
+        # server_timestamp = datetime.now(local_timezone)  # UTC+8 
         try:
             source_timestamp = datetime.strptime(data["SourceTime"], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=local_timezone)
         except ValueError:
@@ -177,7 +183,7 @@ async def process_messages(server):
 # Start OPC UA server
 async def start_opcua_server():    
     try:
-        n_create_node = 100+1
+        n_create_node = 10000+1
         server = Server()
         await server.init()
         server.set_endpoint(opc_ua_endpoint)  

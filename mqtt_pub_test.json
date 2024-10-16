@@ -1,0 +1,10 @@
+{
+"Publisher": "Topic/DO/P38002",
+"Content":
+{
+"IECPath": "P38002$P38002Relay$Obj1CSWI1$Pos",
+"Type": "DP",
+"Value":"1",
+"SBO":"SBO"
+}
+}
