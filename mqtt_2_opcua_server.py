@@ -1,11 +1,5 @@
 # 3000 個資料每秒更新，publish 到 opcua client + publish mqtt 約延遲4秒
 
-# LINUX
-# mosquitto_pub -h 192.168.1.84 -t test/topic -m '{"name":"MyVariable8","tag":"ns=2;s=MyVariable8","value":88,"quality":"Good","timestamp":"2024-10-02 23:38:02.425118"}'
-# windows 
-# mosquitto_pub -h 127.0.0.1 -t Topic/DI/P31025 -f "D:\project\IED\mqtt2opcua_part2\mqtt_pub_test.json"
-
-
 import paho.mqtt.client as mqtt
 from datetime import datetime,timezone, timedelta
 import queue,json, asyncio , logging, csv
@@ -17,9 +11,9 @@ import psutil
 LINUX = False  # Set to False for Windows
 LINUX_PATH = os.path.expanduser('~/Project/IED/code')
 WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
-LOG_FILE_NAME = 'opcua_trigger.log'
-DATA_FILE_NAME = 'data.txt'
-CSV_FILE_NAME = 'iec2opcua_mapping.csv'
+LOG_FILE_NAME = 'log/opcua_trigger.log'
+DATA_FILE_NAME = 'log/data.txt'
+CSV_FILE_NAME = 'config/iec2opcua_mapping.csv'
 LINUX_BROKER = "0.0.0.0"
 WINDOWS_BROKER = '127.0.0.1'
 MQTT_TOPIC = 'Topic/#'
@@ -77,7 +71,7 @@ def load_iec_to_opcua_mapping():
     """
     global iec_to_opcua_mapping
     try:
-        with open(os.path.join(path, CSV_FILE_NAME), mode='r', newline='') as csvfile:
+        with open(os.path.join(path,CSV_FILE_NAME), mode='r', newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 iec_to_opcua_mapping[row['IECPath']] = row['OpcuaNode']
@@ -132,7 +126,7 @@ async def send_to_opcua(server, data):
 # Flush buffered data to file
 def flush_data():
     try:
-        file_name = os.path.join(path, DATA_FILE_NAME)
+        file_name = os.path.join(path,DATA_FILE_NAME)
         with open(file_name, mode='a') as file:
             for row in data_buffer:
                 file.write("\t".join(map(str, row)) + "\n")

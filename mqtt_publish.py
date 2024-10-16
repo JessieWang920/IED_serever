@@ -4,7 +4,7 @@ import json,time,psutil,threading,os, random
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import pandas as pd
 
-csv_file_path = r"D:\project\IED\mqtt2opcua_part2\iec2opcua_mapping.csv"
+csv_file_path = r"D:\project\IED\mqtt2opcua_part2\config\iec2opcua_mapping.csv"
 
 def get_iec_paths(csv_file_path):
     # 讀取 CSV 檔案
@@ -67,7 +67,7 @@ def publish_message(i,client):
         "Type": "DP",
         "Value":f"{sec}",
         "Quality": "0000",
-        "SourceTime":"2024-09-28 17:24:18.258"#f"{datetime.now()}"
+        "SourceTime":f"{datetime.now()}" #"2024-09-28 17:24:18.258"#
         }
     }    
     # 將 JSON 轉換為字串
