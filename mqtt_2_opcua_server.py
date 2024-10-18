@@ -1,8 +1,4 @@
-# 接收 新 JSON 版本 
-# LINUX
-# mosquitto_pub -h 192.168.1.84 -t test/topic -m '{"name":"MyVariable8","tag":"ns=2;s=MyVariable8","value":88,"quality":"Good","timestamp":"2024-10-02 23:38:02.425118"}'
-# windows 
-# mosquitto_pub -h 192.168.1.84 -t test/topic -m "{\"name\":\"MyVariable8\",\"tag\":\"ns=2;s=MyVariable8\",\"value\":88,\"quality\":\"Good\",\"timestamp\":\"2024-10-02 23:38:02.425118\"}"
+# 3000 個資料每秒更新，publish 到 opcua client + publish mqtt 約延遲4秒
 
 import paho.mqtt.client as mqtt
 from datetime import datetime,timezone, timedelta
@@ -15,9 +11,9 @@ import psutil
 LINUX = False  # Set to False for Windows
 LINUX_PATH = os.path.expanduser('~/Project/IED/code')
 WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
-LOG_FILE_NAME = 'opcua_trigger.log'
-DATA_FILE_NAME = 'data.txt'
-CSV_FILE_NAME = 'iec2opcua_mapping.csv'
+LOG_FILE_NAME = 'log/opcua_trigger.log'
+DATA_FILE_NAME = 'log/data.txt'
+CSV_FILE_NAME = 'config/iec2opcua_mapping.csv'
 LINUX_BROKER = "0.0.0.0"
 WINDOWS_BROKER = '127.0.0.1'
 MQTT_TOPIC = 'Topic/#'
@@ -37,18 +33,23 @@ log_file_path = os.path.join(path, LOG_FILE_NAME)
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler(log_file_path, mode='a'), logging.StreamHandler()])
 logger = logging.getLogger("opcua_server")
+logger.error("==================================================================")
 
-# Initialize global variables
+# Initialize global variables   
 message_queue = queue.Queue()
 iec_to_opcua_mapping = {}
 data_buffer = []
 
-
-# MQTT callbacks
 def on_message(client, userdata, message):
     try:
-        msg = json.loads(message.payload)["Content"]
-        message_queue.put(msg)  # Put the message into the queue
+        msg = json.loads(message.payload)        
+        if "Publisher" in msg:
+            sub_topic = "test/publisher"
+            client.publish(sub_topic, json.dumps(msg))
+            logger.info(f"Republished message to topic: {sub_topic}")
+        else:
+            message_queue.put(msg["Content"])  # Put the message into the queue
+    
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode message: {e}")
     except Exception as e:
@@ -70,12 +71,12 @@ def load_iec_to_opcua_mapping():
     """
     global iec_to_opcua_mapping
     try:
-        with open(os.path.join(path, CSV_FILE_NAME), mode='r', newline='') as csvfile:
+        with open(os.path.join(path,CSV_FILE_NAME), mode='r', newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 iec_to_opcua_mapping[row['IECPath']] = row['OpcuaNode']
     except Exception as e:
-        print(f"Error loading CSV file: {e}")
+        logger.error(f"Error loading CSV file: {e}")
 
 # Send data to OPC UA server
 async def send_to_opcua(server, data):
@@ -89,8 +90,8 @@ async def send_to_opcua(server, data):
             logger.warning(f"Failed to get node: {e}")
             return
         
-        local_timezone = timezone(timedelta(hours=8))  # 设定时区为 UTC+8
-        # server_timestamp = datetime.now(local_timezone)  # 当前时间为 UTC+8
+        local_timezone = timezone(timedelta(hours=8))  
+        # server_timestamp = datetime.now(local_timezone)  # UTC+8 
         try:
             source_timestamp = datetime.strptime(data["SourceTime"], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=local_timezone)
         except ValueError:
@@ -125,7 +126,7 @@ async def send_to_opcua(server, data):
 # Flush buffered data to file
 def flush_data():
     try:
-        file_name = os.path.join(path, DATA_FILE_NAME)
+        file_name = os.path.join(path,DATA_FILE_NAME)
         with open(file_name, mode='a') as file:
             for row in data_buffer:
                 file.write("\t".join(map(str, row)) + "\n")
@@ -141,7 +142,7 @@ async def create_node(objects, i):
     try:
         node = await objects.add_variable(f"ns=2;s=var{i}", f"var{i}", i)
         await node.set_writable()
-        status_code_value = ua.DataValue(ua.Variant(ua.StatusCodes.Good))
+        status_code_value = ua.DataValue(ua.StatusCodes.Good)
         await node.write_value(status_code_value)
         # return node
     except Exception as e:
@@ -167,16 +168,16 @@ async def process_messages(server):
                     try:
                         await send_to_opcua(server, msg)
                     except json.JSONDecodeError as e:
-                        print(f"Error decoding JSON: {e}")
+                        logger.error(f"Error decoding JSON: {e}")
                     except Exception as e:
-                        print(f"Error sending to OPC UA: {e}")
+                        logger.error(f"Error sending to OPC UA: {e}")
     except Exception as e:
         logger.error(f"Error processing messages: {e}")
 
 # Start OPC UA server
 async def start_opcua_server():    
     try:
-        n_create_node = 100+1
+        n_create_node = 10000+1
         server = Server()
         await server.init()
         server.set_endpoint(opc_ua_endpoint)  
