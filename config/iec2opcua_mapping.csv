@@ -1,7 +1,7 @@
 IECPath,IEDName,Type,OpcuaNode
-P31025$P31025Relay$Obj1CSWI1$Pos$stVal,user_test,DI,var1
-TG2MV_RTU$TG2MV_RTUTG2MV$AI16GGIO3$AnIn1$mag$i,user_input_1,AI,var2
-path_test_1,,,var3
+P31025$P31025Relay$Obj1CSWI1$Pos$stVal,IED1,DI,var1
+TG2MV_RTU$TG2MV_RTUTG2MV$AI16GGIO3$AnIn1$mag$i,IED2,AI,var2
+path_test_1,IED3,DO,var3
 path_test_2,,,var4
 path_test_3,,,var5
 path_test_4,,,var6
