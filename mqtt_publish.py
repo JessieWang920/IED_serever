@@ -3,8 +3,15 @@ from datetime import datetime
 import json,time,psutil,threading,os, random
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import pandas as pd
+import platform
 
-csv_file_path = r"D:\project\IED\mqtt2opcua_part2\config\iec2opcua_mapping.csv"
+LINUX_PATH = os.path.expanduser('~/Project/IED_server')
+WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
+
+LINUX = platform.system() == "Linux"
+path = LINUX_PATH if LINUX else WINDOWS_PATH
+
+csv_file_path =os.path.join(path,'config','iec2opcua_mapping.csv')
 
 def get_iec_paths(csv_file_path):
     # 讀取 CSV 檔案
@@ -14,28 +21,28 @@ def get_iec_paths(csv_file_path):
     return iec_paths
 
 
-# 創建兩個 MQTT 客戶端，分別連接到不同的 broker
-def setup_mqtt_clients_multi():
-    client_1 = mqtt.Client(client_id="mqtt_client_192_168_1_84", clean_session=False)
-    client_2 = mqtt.Client(client_id="mqtt_client_localhost", clean_session=False)
+# # 創建兩個 MQTT 客戶端，分別連接到不同的 broker
+# def setup_mqtt_clients_multi():
+#     client_1 = mqtt.Client(client_id="mqtt_client_192_168_1_84", clean_session=False)
+#     client_2 = mqtt.Client(client_id="mqtt_client_localhost", clean_session=False)
 
-    # 為每個客戶端設置 on_publish 回調函數
-    client_1.on_publish = on_publish
-    client_2.on_publish = on_publish
+#     # 為每個客戶端設置 on_publish 回調函數
+#     client_1.on_publish = on_publish
+#     client_2.on_publish = on_publish
 
-    try:
-        # 連接到 192.168.1.84 的 MQTT broker
-        client_1.connect("192.168.1.84", 1883, 60)
-    except Exception as e:
-        print(f"連線失敗到 192.168.1.84: {e}")
+#     try:
+#         # 連接到 192.168.1.84 的 MQTT broker
+#         client_1.connect("192.168.1.84", 1883, 60)
+#     except Exception as e:
+#         print(f"連線失敗到 192.168.1.84: {e}")
 
-    try:
-        # 連接到本地的 MQTT broker
-        client_2.connect("127.0.0.1", 1883, 60)
-    except Exception as e:
-        print(f"連線失敗到 localhost: {e}")
+#     try:
+#         # 連接到本地的 MQTT broker
+#         client_2.connect("127.0.0.1", 1883, 60)
+#     except Exception as e:
+#         print(f"連線失敗到 localhost: {e}")
 
-    return client_1, client_2
+#     return client_1, client_2
 
 def setup_mqtt_clients():
     client = mqtt.Client(client_id="mqtt_client_localhost", clean_session=False)

@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 import psutil
 import platform
+import sys 
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class FileModifiedEventHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         try:
+            logger.info(f"File modified : {event.src_path}")
             if event.src_path == self.target_file_path:
                 time.sleep(0.5)
                 current_file_size = os.path.getsize(self.target_file_path)
@@ -28,10 +30,21 @@ class FileModifiedEventHandler(FileSystemEventHandler):
 
     def prompt_to_restart_script(self):
         try:
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes('-topmost', True)
-            result = messagebox.askyesno("File Changed", "The file has been changed. Do you want to re-run the script?")
+            try:
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes('-topmost', True)
+                result = messagebox.askyesno("File Changed", "The file has been changed. Do you want to re-run the script?")
+            except Exception as e:
+                logger.error(f"LINUX can't show tkinter prompt, using input() instead")
+                response = input("The file has been changed. Do you want to re-run the script? (yes/no): ")
+                if response.lower() in ['yes', 'y']:
+                    result = True
+                    logger.info("User chose to re-run the script")
+                else:
+                    result = False
+                    logger.info("User chose not to re-run the script")
+            
             if result:
                 # close existing process and restart script
                 self.terminate_existing_process()
@@ -65,13 +78,20 @@ class FileModifiedEventHandler(FileSystemEventHandler):
     def start_script(self):
         try:
             logger.info("Starting the script...")
-            os.startfile(self.script_path)
+            if LINUX:
+                logger.info('close mqtt_server screen')
+                os.system('screen -S mqtt_server -X quit')
+                logger.info('start mqtt_server and create screen')
+                os.system(f'screen -dmS mqtt_server /home/user/Software/Python/IED_env/bin/python {server_script_path}')
+            else:
+                logger.info('try startfile ')
+                os.startfile(self.script_path)
         except Exception as e:
             logger.error(f"Error during starting the script: {e}")
 
-
 def watch_file(target_file_path, script_path):
     try:
+        logger.info(f"Watching file: {target_file_path}")
         event_handler = FileModifiedEventHandler(target_file_path, script_path)
         observer = Observer()
         observer.schedule(event_handler, path=os.path.dirname(target_file_path), recursive=False)
@@ -85,10 +105,9 @@ def watch_file(target_file_path, script_path):
     finally:
         observer.join()
 
-
 if __name__ == "__main__":
     # config
-    LINUX_PATH = os.path.expanduser('~/Project/IED/code')
+    LINUX_PATH = os.path.expanduser('~/Project/IED_server')
     WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
     # system
     LINUX = platform.system() == "Linux"
@@ -105,8 +124,7 @@ if __name__ == "__main__":
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                         handlers=[logging.FileHandler(log_file_path, mode='a'), logging.StreamHandler()])
     try:
-        # target_file_path = r"D:\project\IED\mqtt2opcua_part2\config\iec2opcua_mapping.csv"
-        # script_path = r"D:\project\IED\mqtt2opcua_part2\test_hello.py"
         watch_file(target_file_name, server_script_path)
     except Exception as e:
         logger.error(f"Error in main execution: {e}")
+

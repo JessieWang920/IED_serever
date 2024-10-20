@@ -150,8 +150,8 @@ path_test_146,,,var148
 path_test_147,,,var149
 path_test_148,,,var150
 path_test_149,,,var151
-path_test_150,,,var152
-path_test_151,,,var153
+path_test_150,,AI,var152
+path_test_151,,AI,var153
 path_test_152,,AI,var154
 path_test_153,,AI,var155
 path_test_154,,AI,var156
@@ -162,7 +162,7 @@ path_test_158,,AI,var160
 path_test_159,,AI,var161
 path_test_160,,AI,var162
 path_test_161,,AI,var163
-path_test_162,,,var164
+path_test_162,,AI,var164
 path_test_163,,,var165
 path_test_164,,,var166
 path_test_165,,,var167
@@ -2993,11 +2993,11 @@ path_test_2989,,,var2991
 path_test_2990,,,var2992
 path_test_2991,,,var2993
 path_test_2992,,,var2994
-path_test_2993,,,var2995
+path_test_2993,,AI,var2995
 path_test_2994,,,var2996
 path_test_2995,,,var2997
 path_test_2996,,,var2998
 path_test_2997,,,var2999
-path_test_2998,,,var3000
-path_test_2999,,,var3001
-path_test_3000,,,var3002
+path_test_2998,,AI,var3000
+path_test_2999,,AI,var3001
+path_test_3000,,AI,var3002
