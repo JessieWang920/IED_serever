@@ -9,7 +9,7 @@ import psutil
 import platform
 
 # config
-LINUX_PATH = os.path.expanduser('~/Project/IED/code')
+LINUX_PATH = os.path.expanduser('~/Project//IED_server')
 WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
 LINUX_BROKER = "0.0.0.0"
 WINDOWS_BROKER = '127.0.0.1'
