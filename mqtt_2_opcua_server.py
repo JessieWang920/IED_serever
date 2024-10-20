@@ -183,7 +183,7 @@ async def process_messages(server):
 # Start OPC UA server
 async def start_opcua_server():    
     try:
-        n_create_node = 100+1
+        n_create_node = 10000+1
         server = Server()
         await server.init()
         server.set_endpoint(opc_ua_endpoint)  
@@ -202,7 +202,7 @@ async def start_opcua_server():
 if __name__ == "__main__":
     load_iec_to_opcua_mapping()
     create_lock_file()
-    
+
     # Create MQTT client
     client = mqtt.Client(client_id="my_mqtt_client_2", clean_session=False)
     client.on_message = on_message
