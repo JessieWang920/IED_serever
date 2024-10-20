@@ -6,14 +6,11 @@ import queue,json, asyncio , logging, csv
 from asyncua import ua, Server  
 import os
 import psutil
+import platform
 
 # config
-LINUX = False  # Set to False for Windows
 LINUX_PATH = os.path.expanduser('~/Project/IED/code')
 WINDOWS_PATH = r'D:\project\IED\mqtt2opcua_part2'
-LOG_FILE_NAME = 'log/opcua_trigger.log'
-DATA_FILE_NAME = 'log/data.txt'
-CSV_FILE_NAME = 'config/iec2opcua_mapping.csv'
 LINUX_BROKER = "0.0.0.0"
 WINDOWS_BROKER = '127.0.0.1'
 MQTT_TOPIC = 'Topic/#'
@@ -21,32 +18,42 @@ OPC_UA_ENDPOINT_LINUX = 'opc.tcp://192.168.1.84:62640/IntegrationObjects/ServerS
 OPC_UA_ENDPOINT_WINDOWS = 'opc.tcp://desktop-apkvnmm:62640/IntegrationObjects/ServerSimulator'
 
 # system config
+LINUX = platform.system() == "Linux"
 opc_ua_endpoint = OPC_UA_ENDPOINT_LINUX if LINUX else OPC_UA_ENDPOINT_WINDOWS
 path = LINUX_PATH if LINUX else WINDOWS_PATH
 mqtt_broker = LINUX_BROKER if LINUX else WINDOWS_BROKER
+
+log_file_path = os.path.join(path, 'log','opcua_trigger.log')
+get_data_file_path = os.path.join(path,'log','data.txt')
+csv_file_path =os.path.join(path,'config','iec2opcua_mapping.csv')
+lock_file_path = os.path.join(path,'log','pid.lock')
 
 # Set CPU affinity
 psutil.Process().cpu_affinity([1, 2, 3])
 
 # Set up logging
-log_file_path = os.path.join(path, LOG_FILE_NAME)
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler(log_file_path, mode='a'), logging.StreamHandler()])
 logger = logging.getLogger("opcua_server")
-logger.error("==================================================================")
+logger.error("========================================================")
 
 # Initialize global variables   
 message_queue = queue.Queue()
 iec_to_opcua_mapping = {}
 data_buffer = []
 
+def create_lock_file():
+    current_pid = os.getpid()
+    with open(lock_file_path,"w") as f:
+        f.write(str(current_pid))
+    logger.info(f"Lock file created with PID: {current_pid}")
+
 def on_message(client, userdata, message):
     try:
         msg = json.loads(message.payload)        
-        if "Publisher" in msg:
-            sub_topic = "test/publisher"
-            client.publish(sub_topic, json.dumps(msg))
-            logger.info(f"Republished message to topic: {sub_topic}")
+        if "Publisher" in msg: 
+            client.publish(msg["Publisher"], json.dumps(msg),qos=1)
+            # logger.info(f"Republished message to topic: {msg["Publisher"]}")
         else:
             message_queue.put(msg["Content"])  # Put the message into the queue
     
@@ -71,7 +78,7 @@ def load_iec_to_opcua_mapping():
     """
     global iec_to_opcua_mapping
     try:
-        with open(os.path.join(path,CSV_FILE_NAME), mode='r', newline='') as csvfile:
+        with open(csv_file_path, mode='r', newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 iec_to_opcua_mapping[row['IECPath']] = row['OpcuaNode']
@@ -125,9 +132,8 @@ async def send_to_opcua(server, data):
 
 # Flush buffered data to file
 def flush_data():
-    try:
-        file_name = os.path.join(path,DATA_FILE_NAME)
-        with open(file_name, mode='a') as file:
+    try:        
+        with open(get_data_file_path, mode='a') as file:
             for row in data_buffer:
                 file.write("\t".join(map(str, row)) + "\n")
         data_buffer.clear()
@@ -195,7 +201,8 @@ async def start_opcua_server():
 
 if __name__ == "__main__":
     load_iec_to_opcua_mapping()
-    
+    create_lock_file()
+
     # Create MQTT client
     client = mqtt.Client(client_id="my_mqtt_client_2", clean_session=False)
     client.on_message = on_message
@@ -221,3 +228,4 @@ if __name__ == "__main__":
         client.loop_stop()  # Stop the event loop
         client.disconnect()  # Disconnect
         logger.warning("MQTT client disconnected.")
+        os.remove(lock_file_path)

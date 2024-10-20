@@ -1,3 +1,4 @@
 opcua_trigger.log
 data.txt
 log
+__pycache__
