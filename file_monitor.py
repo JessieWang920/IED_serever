@@ -33,7 +33,10 @@ class FileModifiedEventHandler(FileSystemEventHandler):
             root.attributes('-topmost', True)
             result = messagebox.askyesno("File Changed", "The file has been changed. Do you want to re-run the script?")
             if result:
+                # close existing process and restart script
                 self.terminate_existing_process()
+                # start script only
+                # self.start_script()
         except Exception as e:
             logger.error(f"Error during prompting to restart script: {e}")
 
